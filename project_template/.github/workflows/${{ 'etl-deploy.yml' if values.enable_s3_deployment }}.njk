@@ -84,12 +84,25 @@ jobs:
     name: Deploy to S3
     runs-on: ubuntu-22.04
     needs: etl-pipeline
-    {% if not values.deploy_on_pr %}
+{% if not values.deploy_on_pr %}
     if: >
       (github.event_name == 'push' && github.ref == 'refs/heads/${{ values.default_branch }}') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy_to_s3 == 'true')
-    {% endif %}
+{% endif %}
     steps:
+{% if values.enable_github_secrets %}
+      - name: Configure AWS Credentials (GitHub Secrets)
+        env:
+          AWS_ACCESS_KEY_ID: {% raw %}${{ secrets.AWS_ACCESS_KEY_ID }}{% endraw %}
+          AWS_SECRET_ACCESS_KEY: {% raw %}${{ secrets.AWS_SECRET_ACCESS_KEY }}{% endraw %}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "::error::AWS credentials not found in GitHub Secrets"
+            echo "::error::Please add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to repository secrets"
+            exit 1
+          fi
+          echo "AWS credentials configured from GitHub Secrets"
+{% endif %}
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -125,24 +138,10 @@ jobs:
         run: pipenv install --dev
 {% endif %}
 
-{% if values.enable_github_secrets %}
-      - name: Configure AWS Credentials (GitHub Secrets)
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
-            echo "::error::AWS credentials not found in GitHub Secrets"
-            echo "::error::Please add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to repository secrets"
-            exit 1
-          fi
-          echo "AWS credentials configured from GitHub Secrets"
-{% endif %}
-
       - name: Deploy to S3
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: {% raw %}${{ secrets.AWS_ACCESS_KEY_ID }}{% endraw %}
+          AWS_SECRET_ACCESS_KEY: {% raw %}${{ secrets.AWS_SECRET_ACCESS_KEY }}{% endraw %}
         run: poetry run python scripts/deploy_to_s3.py
 
       - name: Display Website URL
