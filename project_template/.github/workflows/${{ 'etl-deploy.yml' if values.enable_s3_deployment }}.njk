@@ -97,6 +97,11 @@ jobs:
           name: etl-results
           path: results/
 
+{% if values.package_manager == 'poetry' %}
+      - name: Install Poetry
+        run: pipx install poetry==1.8.3
+{% endif %}
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -108,9 +113,6 @@ jobs:
 {% endif %}
 
 {% if values.package_manager == 'poetry' %}
-      - name: Install Poetry
-        run: pipx install poetry==1.8.3
-
       - name: Install Dependencies
         run: poetry install --no-root
 {% else %}
