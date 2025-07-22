@@ -10,7 +10,7 @@ class DataExtractor:
     """Class for extracting data from various sources."""
 
     def __init__(self):
-        self.supported_formats = ['.csv', '.xlsx', '.json']
+        self.supported_formats = [".csv", ".xlsx", ".json"]
 
     def extract_csv(self, file_path: str, **kwargs) -> pd.DataFrame:
         """Extract data from CSV file.
@@ -59,7 +59,7 @@ class DataExtractor:
             "exists": True,
             "size_bytes": file_path.stat().st_size,
             "suffix": file_path.suffix,
-            "name": file_path.name
+            "name": file_path.name,
         }
 
 

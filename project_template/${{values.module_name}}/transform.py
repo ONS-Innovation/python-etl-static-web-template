@@ -35,7 +35,7 @@ class DataTransformer:
         # Handle missing values - fill numeric columns with median, categorical with mode
         for column in df_cleaned.columns:
             if df_cleaned[column].isnull().any():
-                if df_cleaned[column].dtype in ['int64', 'float64']:
+                if df_cleaned[column].dtype in ["int64", "float64"]:
                     df_cleaned[column].fillna(df_cleaned[column].median(), inplace=True)
                     logger.info(f"Filled missing values in {column} with median")
                 else:
@@ -58,16 +58,18 @@ class DataTransformer:
         df_transformed = df.copy()
 
         # Example transformations - adjust based on your data structure
-        if 'quantity' in df.columns and 'price' in df.columns:
-            df_transformed['total_value'] = df_transformed['quantity'] * df_transformed['price']
+        if "quantity" in df.columns and "price" in df.columns:
+            df_transformed["total_value"] = (
+                df_transformed["quantity"] * df_transformed["price"]
+            )
             logger.info("Added total_value column")
             self.transformation_log.append("Added total_value column")
 
-        if 'date' in df.columns:
-            df_transformed['date'] = pd.to_datetime(df_transformed['date'])
-            df_transformed['year'] = df_transformed['date'].dt.year
-            df_transformed['month'] = df_transformed['date'].dt.month
-            df_transformed['day_of_week'] = df_transformed['date'].dt.day_name()
+        if "date" in df.columns:
+            df_transformed["date"] = pd.to_datetime(df_transformed["date"])
+            df_transformed["year"] = df_transformed["date"].dt.year
+            df_transformed["month"] = df_transformed["date"].dt.month
+            df_transformed["day_of_week"] = df_transformed["date"].dt.day_name()
             logger.info("Added date-based columns")
             self.transformation_log.append("Added date-based columns")
 
@@ -88,10 +90,14 @@ class DataTransformer:
         for column, criteria in filters.items():
             if column in df_filtered.columns:
                 if isinstance(criteria, dict):
-                    if 'min' in criteria:
-                        df_filtered = df_filtered[df_filtered[column] >= criteria['min']]
-                    if 'max' in criteria:
-                        df_filtered = df_filtered[df_filtered[column] <= criteria['max']]
+                    if "min" in criteria:
+                        df_filtered = df_filtered[
+                            df_filtered[column] >= criteria["min"]
+                        ]
+                    if "max" in criteria:
+                        df_filtered = df_filtered[
+                            df_filtered[column] <= criteria["max"]
+                        ]
                 elif isinstance(criteria, list):
                     df_filtered = df_filtered[df_filtered[column].isin(criteria)]
                 else:
@@ -130,8 +136,8 @@ def apply_business_rules(df: pd.DataFrame) -> pd.DataFrame:
 
     # Apply any business-specific filters
     # Example: filter out negative quantities
-    if 'quantity' in df_enhanced.columns:
-        df_filtered = transformer.filter_data(df_enhanced, {'quantity': {'min': 0}})
+    if "quantity" in df_enhanced.columns:
+        df_filtered = transformer.filter_data(df_enhanced, {"quantity": {"min": 0}})
     else:
         df_filtered = df_enhanced
 
@@ -149,6 +155,8 @@ def normalise_column_names(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with normalised column names
     """
     df_normalised = df.copy()
-    df_normalised.columns = df_normalised.columns.str.lower().str.replace(' ', '_').str.replace('-', '_')
+    df_normalised.columns = (
+        df_normalised.columns.str.lower().str.replace(" ", "_").str.replace("-", "_")
+    )
     logger.info("Column names normalised")
     return df_normalised

@@ -12,7 +12,7 @@ class DataLoader:
     """Class for loading data to various destinations."""
 
     def __init__(self):
-        self.supported_formats = ['.csv', '.xlsx', '.json', '.parquet']
+        self.supported_formats = [".csv", ".xlsx", ".json", ".parquet"]
         self.load_summary = {}
 
     def load_to_csv(self, df: pd.DataFrame, output_path: str, **kwargs) -> bool:
@@ -41,7 +41,7 @@ class DataLoader:
                 "rows": len(df),
                 "columns": len(df.columns),
                 "format": "csv",
-                "status": "success"
+                "status": "success",
             }
 
             logger.info(f"Successfully loaded data to {output_path}")
@@ -49,10 +49,7 @@ class DataLoader:
 
         except Exception as e:
             logger.error(f"Error loading data to {output_path}: {e!s}")
-            self.load_summary[output_path] = {
-                "status": "failed",
-                "error": str(e)
-            }
+            self.load_summary[output_path] = {"status": "failed", "error": str(e)}
             return False
 
     def load_to_parquet(self, df: pd.DataFrame, output_path: str, **kwargs) -> bool:
@@ -81,7 +78,7 @@ class DataLoader:
                 "rows": len(df),
                 "columns": len(df.columns),
                 "format": "parquet",
-                "status": "success"
+                "status": "success",
             }
 
             logger.info(f"Successfully loaded data to {output_path}")
@@ -89,10 +86,7 @@ class DataLoader:
 
         except Exception as e:
             logger.error(f"Error loading data to {output_path}: {e!s}")
-            self.load_summary[output_path] = {
-                "status": "failed",
-                "error": str(e)
-            }
+            self.load_summary[output_path] = {"status": "failed", "error": str(e)}
             return False
 
     def load_to_json(self, df: pd.DataFrame, output_path: str, **kwargs) -> bool:
@@ -114,14 +108,14 @@ class DataLoader:
             output_dir.mkdir(parents=True, exist_ok=True)
 
             # Save to JSON
-            df.to_json(output_path, orient='records', indent=2, **kwargs)
+            df.to_json(output_path, orient="records", indent=2, **kwargs)
 
             # Update load summary
             self.load_summary[output_path] = {
                 "rows": len(df),
                 "columns": len(df.columns),
                 "format": "json",
-                "status": "success"
+                "status": "success",
             }
 
             logger.info(f"Successfully loaded data to {output_path}")
@@ -129,10 +123,7 @@ class DataLoader:
 
         except Exception as e:
             logger.error(f"Error loading data to {output_path}: {e!s}")
-            self.load_summary[output_path] = {
-                "status": "failed",
-                "error": str(e)
-            }
+            self.load_summary[output_path] = {"status": "failed", "error": str(e)}
             return False
 
     def get_load_summary(self) -> Dict[str, Any]:
@@ -159,7 +150,9 @@ class DataLoader:
             return False
 
 
-def save_to_destination(df: pd.DataFrame, output_path: str, format_type: str = "csv") -> bool:
+def save_to_destination(
+    df: pd.DataFrame, output_path: str, format_type: str = "csv"
+) -> bool:
     """Helper function to save DataFrame to specified destination.
 
     Args:
@@ -201,7 +194,7 @@ def create_data_summary(df: pd.DataFrame, output_path: str) -> bool:
         # Convert datetime columns to string for JSON serialization
         df_for_summary = df.copy()
         for col in df_for_summary.columns:
-            if df_for_summary[col].dtype == 'datetime64[ns]':
+            if df_for_summary[col].dtype == "datetime64[ns]":
                 df_for_summary[col] = df_for_summary[col].astype(str)
 
         summary = {
@@ -212,7 +205,8 @@ def create_data_summary(df: pd.DataFrame, output_path: str) -> bool:
             "missing_values": df.isnull().sum().to_dict(),
             "numeric_summary": (
                 df_for_summary.describe().to_dict()
-                if len(df_for_summary.select_dtypes(include=['number']).columns) > 0 else {}
+                if len(df_for_summary.select_dtypes(include=["number"]).columns) > 0
+                else {}
             ),
         }
 
@@ -220,7 +214,7 @@ def create_data_summary(df: pd.DataFrame, output_path: str) -> bool:
         output_dir = Path(output_path).parent
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             json.dump(summary, f, indent=2)
 
         logger.info(f"Data summary saved to {output_path}")

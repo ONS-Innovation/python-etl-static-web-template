@@ -20,17 +20,19 @@ class ETLPipeline:
         self.loader = DataLoader()
         self.pipeline_summary = {}
 
-    def run_pipeline(self,
-                    source_path: str,
-                    output_path: str,
-                    source_type: str = "csv",
-                    output_format: str = "csv",
-                    apply_transforms: bool = True,
-                    filters: Optional[Dict[str, Any]] = None,
-                    enable_deployment: bool = False,
-                    s3_bucket_name: Optional[str] = None,
-                    project_name: Optional[str] = None,
-                    aws_region: str = "eu-west-2") -> bool:
+    def run_pipeline(
+        self,
+        source_path: str,
+        output_path: str,
+        source_type: str = "csv",
+        output_format: str = "csv",
+        apply_transforms: bool = True,
+        filters: Optional[Dict[str, Any]] = None,
+        enable_deployment: bool = False,
+        s3_bucket_name: Optional[str] = None,
+        project_name: Optional[str] = None,
+        aws_region: str = "eu-west-2",
+    ) -> bool:
         """Run the complete ETL pipeline.
 
         Args:
@@ -54,10 +56,10 @@ class ETLPipeline:
             # Extract
             logger.info("Phase 1: Extract")
             df = extract_from_source(source_path, source_type)
-            self.pipeline_summary['extract'] = {
-                'source_path': source_path,
-                'rows_extracted': len(df),
-                'columns_extracted': len(df.columns)
+            self.pipeline_summary["extract"] = {
+                "source_path": source_path,
+                "rows_extracted": len(df),
+                "columns_extracted": len(df.columns),
             }
 
             # Transform
@@ -73,13 +75,15 @@ class ETLPipeline:
                 if filters:
                     df = self.transformer.filter_data(df, filters)
 
-                self.pipeline_summary['transform'] = {
-                    'transformations_applied': self.transformer.get_transformation_summary(),
-                    'final_rows': len(df),
-                    'final_columns': len(df.columns)
+                self.pipeline_summary["transform"] = {
+                    "transformations_applied": self.transformer.get_transformation_summary(),
+                    "final_rows": len(df),
+                    "final_columns": len(df.columns),
                 }
             else:
-                self.pipeline_summary['transform'] = {'transformations_applied': ['None - transformations skipped']}
+                self.pipeline_summary["transform"] = {
+                    "transformations_applied": ["None - transformations skipped"]
+                }
 
             # Load
             logger.info("Phase 3: Load")
@@ -87,14 +91,14 @@ class ETLPipeline:
 
             if success:
                 # Create data summary
-                summary_path = output_path.replace(f'.{output_format}', '_summary.json')
+                summary_path = output_path.replace(f".{output_format}", "_summary.json")
                 create_data_summary(df, summary_path)
 
-                self.pipeline_summary['load'] = {
-                    'output_path': output_path,
-                    'summary_path': summary_path,
-                    'final_rows': len(df),
-                    'status': 'success'
+                self.pipeline_summary["load"] = {
+                    "output_path": output_path,
+                    "summary_path": summary_path,
+                    "final_rows": len(df),
+                    "status": "success",
                 }
 
                 # Deploy (Phase 4) - Optional
@@ -105,29 +109,31 @@ class ETLPipeline:
                         summary=self.pipeline_summary,
                         bucket_name=s3_bucket_name,
                         project_name=project_name or "ETL Results",
-                        region_name=aws_region
+                        region_name=aws_region,
                     )
-                    
+
                     if website_url:
-                        self.pipeline_summary['deploy'] = {
-                            'website_url': website_url,
-                            'status': 'success'
+                        self.pipeline_summary["deploy"] = {
+                            "website_url": website_url,
+                            "status": "success",
                         }
-                        logger.info(f"Deployment successful. Website URL: {website_url}")
+                        logger.info(
+                            f"Deployment successful. Website URL: {website_url}"
+                        )
                     else:
-                        self.pipeline_summary['deploy'] = {'status': 'failed'}
+                        self.pipeline_summary["deploy"] = {"status": "failed"}
                         logger.warning("Deployment failed, but pipeline will continue")
 
                 logger.info("ETL pipeline completed successfully")
                 return True
             else:
-                self.pipeline_summary['load'] = {'status': 'failed'}
+                self.pipeline_summary["load"] = {"status": "failed"}
                 logger.error("ETL pipeline failed during load phase")
                 return False
 
         except Exception as e:
             logger.error(f"ETL pipeline failed: {e!s}")
-            self.pipeline_summary['error'] = str(e)
+            self.pipeline_summary["error"] = str(e)
             return False
 
     def get_pipeline_summary(self) -> Dict[str, Any]:
@@ -140,11 +146,13 @@ class ETLPipeline:
 
 
 # Convenience function for quick pipeline execution
-def run_etl(source_path: str,
-           output_path: str,
-           source_type: str = "csv",
-           output_format: str = "csv",
-           **kwargs) -> bool:
+def run_etl(
+    source_path: str,
+    output_path: str,
+    source_type: str = "csv",
+    output_format: str = "csv",
+    **kwargs,
+) -> bool:
     """Convenience function to run ETL pipeline.
 
     Args:
@@ -158,11 +166,20 @@ def run_etl(source_path: str,
         True if pipeline completed successfully, False otherwise
     """
     pipeline = ETLPipeline()
-    return pipeline.run_pipeline(source_path, output_path, source_type, output_format, **kwargs)
+    return pipeline.run_pipeline(
+        source_path, output_path, source_type, output_format, **kwargs
+    )
 
 
 __all__ = [
-    'DataExtractor', 'DataTransformer', 'DataLoader', 'ETLPipeline',
-    'extract_from_source', 'apply_business_rules', 'normalise_column_names',
-    'save_to_destination', 'create_data_summary', 'run_etl'
+    "DataExtractor",
+    "DataTransformer",
+    "DataLoader",
+    "ETLPipeline",
+    "extract_from_source",
+    "apply_business_rules",
+    "normalise_column_names",
+    "save_to_destination",
+    "create_data_summary",
+    "run_etl",
 ]

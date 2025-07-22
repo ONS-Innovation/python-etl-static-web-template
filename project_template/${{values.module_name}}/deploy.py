@@ -17,74 +17,79 @@ class HTMLGenerator:
 
     def __init__(self, template_dir: str = "templates"):
         """Initialise HTML generator with template directory.
-        
+
         Args:
             template_dir: Directory containing HTML templates
         """
         self.template_dir = Path(template_dir)
         self.env = Environment(loader=FileSystemLoader(template_dir))
-        
-    def generate_data_report(self, 
-                           df: pd.DataFrame, 
-                           summary: Dict[str, Any],
-                           output_path: str,
-                           title: str = "Data Report") -> bool:
+
+    def generate_data_report(
+        self,
+        df: pd.DataFrame,
+        summary: Dict[str, Any],
+        output_path: str,
+        title: str = "Data Report",
+    ) -> bool:
         """Generate HTML data report from DataFrame and summary.
-        
+
         Args:
             df: Processed DataFrame
             summary: Data processing summary
             output_path: Path to save HTML file
             title: Report title
-            
+
         Returns:
             True if successful, False otherwise
         """
         try:
             logger.info(f"Generating HTML report to {output_path}")
-            
+
             # Prepare data for template
             template_data = {
-                'title': title,
-                'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'summary': summary,
-                'data_preview': df.head(10).to_html(classes='table table-striped', escape=False),
-                'total_rows': len(df),
-                'total_columns': len(df.columns),
-                'columns': df.columns.tolist(),
-                'data_types': df.dtypes.astype(str).to_dict(),
-                'missing_values': df.isnull().sum().to_dict(),
-                'numeric_summary': (
-                    df.describe().to_html(classes='table table-striped') 
-                    if len(df.select_dtypes(include=['number']).columns) > 0 else None
-                )
+                "title": title,
+                "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "summary": summary,
+                "data_preview": df.head(10).to_html(
+                    classes="table table-striped", escape=False
+                ),
+                "total_rows": len(df),
+                "total_columns": len(df.columns),
+                "columns": df.columns.tolist(),
+                "data_types": df.dtypes.astype(str).to_dict(),
+                "missing_values": df.isnull().sum().to_dict(),
+                "numeric_summary": (
+                    df.describe().to_html(classes="table table-striped")
+                    if len(df.select_dtypes(include=["number"]).columns) > 0
+                    else None
+                ),
             }
-            
+
             # Load and render template
-            template = self.env.get_template('data_report.html')
+            template = self.env.get_template("data_report.html")
             html_content = template.render(**template_data)
-            
+
             # Ensure output directory exists
             output_dir = Path(output_path).parent
             output_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Write HTML file
-            with open(output_path, 'w', encoding='utf-8') as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
-                
+
             logger.info(f"HTML report generated successfully: {output_path}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error generating HTML report: {e!s}")
             return False
 
     def create_default_template(self, template_path: str) -> bool:
         """Create a default HTML template if none exists.
-        
+
         Args:
             template_path: Path to create template file
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -213,17 +218,17 @@ class HTMLGenerator:
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>"""
-            
+
             # Ensure directory exists
             Path(template_path).parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Write template file
-            with open(template_path, 'w', encoding='utf-8') as f:
+            with open(template_path, "w", encoding="utf-8") as f:
                 f.write(template_content)
-                
+
             logger.info(f"Default template created: {template_path}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Error creating default template: {e!s}")
             return False
@@ -232,13 +237,15 @@ class HTMLGenerator:
 class S3Deployer:
     """Class for deploying static websites to S3."""
 
-    def __init__(self, 
-                 bucket_name: str,
-                 aws_access_key_id: Optional[str] = None,
-                 aws_secret_access_key: Optional[str] = None,
-                 region_name: str = "us-east-1"):
+    def __init__(
+        self,
+        bucket_name: str,
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        region_name: str = "us-east-1",
+    ):
         """Initialise S3 deployer.
-        
+
         Args:
             bucket_name: S3 bucket name
             aws_access_key_id: AWS access key (optional, can use env vars)
@@ -247,139 +254,145 @@ class S3Deployer:
         """
         self.bucket_name = bucket_name
         self.region_name = region_name
-        
+
         # Initialise S3 client
         session = boto3.Session(
-            aws_access_key_id=aws_access_key_id or os.getenv('AWS_ACCESS_KEY_ID'),
-            aws_secret_access_key=aws_secret_access_key or os.getenv('AWS_SECRET_ACCESS_KEY'),
-            region_name=region_name
+            aws_access_key_id=aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=aws_secret_access_key
+            or os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=region_name,
         )
-        self.s3_client = session.client('s3')
-        
-    def deploy_website(self, 
-                      local_path: str, 
-                      s3_prefix: str = "",
-                      enable_website: bool = True) -> Optional[str]:
+        self.s3_client = session.client("s3")
+
+    def deploy_website(
+        self, local_path: str, s3_prefix: str = "", enable_website: bool = True
+    ) -> Optional[str]:
         """Deploy local files to S3 and optionally enable static website hosting.
-        
+
         Args:
             local_path: Local directory or file path to deploy
             s3_prefix: S3 key prefix (folder path in bucket)
             enable_website: Whether to enable S3 static website hosting
-            
+
         Returns:
             Website URL if successful, None otherwise
         """
         try:
             logger.info(f"Deploying {local_path} to S3 bucket {self.bucket_name}")
-            
+
             local_path = Path(local_path)
-            
+
             if local_path.is_file():
                 # Deploy single file
-                s3_key = f"{s3_prefix}/{local_path.name}" if s3_prefix else local_path.name
+                s3_key = (
+                    f"{s3_prefix}/{local_path.name}" if s3_prefix else local_path.name
+                )
                 self._upload_file(local_path, s3_key)
                 files_uploaded = [s3_key]
             elif local_path.is_dir():
                 # Deploy directory
                 files_uploaded = []
-                for file_path in local_path.rglob('*'):
+                for file_path in local_path.rglob("*"):
                     if file_path.is_file():
                         relative_path = file_path.relative_to(local_path)
-                        s3_key = f"{s3_prefix}/{relative_path}" if s3_prefix else str(relative_path)
-                        s3_key = s3_key.replace('\\', '/')  # Handle Windows paths
+                        s3_key = (
+                            f"{s3_prefix}/{relative_path}"
+                            if s3_prefix
+                            else str(relative_path)
+                        )
+                        s3_key = s3_key.replace("\\", "/")  # Handle Windows paths
                         self._upload_file(file_path, s3_key)
                         files_uploaded.append(s3_key)
             else:
                 raise FileNotFoundError(f"Local path not found: {local_path}")
-            
+
             # Enable static website hosting if requested
             if enable_website:
                 self._enable_static_website()
-            
+
             # Generate website URL
             website_url = self._get_website_url()
-            
+
             logger.info(f"Deployment successful. Website URL: {website_url}")
             logger.info(f"Uploaded {len(files_uploaded)} files")
-            
+
             return website_url
-            
+
         except Exception as e:
             logger.error(f"Error deploying to S3: {e!s}")
             return None
-    
+
     def _upload_file(self, local_file: Path, s3_key: str) -> None:
         """Upload a single file to S3 with appropriate content type."""
         content_type = self._get_content_type(local_file.suffix)
-        
-        extra_args = {'ContentType': content_type}
-        if local_file.suffix.lower() in ['.html', '.htm']:
-            extra_args['CacheControl'] = 'max-age=300'  # 5 minutes cache for HTML
-        
+
+        extra_args = {"ContentType": content_type}
+        if local_file.suffix.lower() in [".html", ".htm"]:
+            extra_args["CacheControl"] = "max-age=300"  # 5 minutes cache for HTML
+
         self.s3_client.upload_file(
-            str(local_file),
-            self.bucket_name,
-            s3_key,
-            ExtraArgs=extra_args
+            str(local_file), self.bucket_name, s3_key, ExtraArgs=extra_args
         )
-        
+
         logger.debug(f"Uploaded {local_file} to s3://{self.bucket_name}/{s3_key}")
-    
+
     def _enable_static_website(self) -> None:
         """Enable static website hosting on the S3 bucket."""
         try:
             website_config = {
-                'IndexDocument': {'Suffix': 'index.html'},
-                'ErrorDocument': {'Key': 'error.html'}
+                "IndexDocument": {"Suffix": "index.html"},
+                "ErrorDocument": {"Key": "error.html"},
             }
-            
+
             self.s3_client.put_bucket_website(
-                Bucket=self.bucket_name,
-                WebsiteConfiguration=website_config
+                Bucket=self.bucket_name, WebsiteConfiguration=website_config
             )
-            
+
             logger.info("Static website hosting enabled")
-            
+
         except Exception as e:
             logger.warning(f"Could not enable static website hosting: {e!s}")
-    
+
     def _get_website_url(self) -> str:
         """Get the static website URL for the bucket."""
-        if self.region_name == 'us-east-1':
+        if self.region_name == "us-east-1":
             return f"http://{self.bucket_name}.s3-website-us-east-1.amazonaws.com"
         else:
-            return f"http://{self.bucket_name}.s3-website-{self.region_name}.amazonaws.com"
-    
+            return (
+                f"http://{self.bucket_name}.s3-website-{self.region_name}.amazonaws.com"
+            )
+
     def _get_content_type(self, file_extension: str) -> str:
         """Get appropriate content type for file extension."""
         content_types = {
-            '.html': 'text/html',
-            '.htm': 'text/html',
-            '.css': 'text/css',
-            '.js': 'application/javascript',
-            '.json': 'application/json',
-            '.png': 'image/png',
-            '.jpg': 'image/jpeg',
-            '.jpeg': 'image/jpeg',
-            '.gif': 'image/gif',
-            '.svg': 'image/svg+xml',
-            '.ico': 'image/x-icon',
-            '.pdf': 'application/pdf',
-            '.csv': 'text/csv'
+            ".html": "text/html",
+            ".htm": "text/html",
+            ".css": "text/css",
+            ".js": "application/javascript",
+            ".json": "application/json",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".svg": "image/svg+xml",
+            ".ico": "image/x-icon",
+            ".pdf": "application/pdf",
+            ".csv": "text/csv",
         }
-        return content_types.get(file_extension.lower(), 'application/octet-stream')
+        return content_types.get(file_extension.lower(), "application/octet-stream")
 
 
-def deploy_etl_results(df: pd.DataFrame,
-                      summary: Dict[str, Any],
-                      bucket_name: str,
-                      project_name: str,
-                      aws_access_key_id: Optional[str] = None,
-                      aws_secret_access_key: Optional[str] = None,
-                      region_name: str = "us-east-1") -> Optional[str]:
+def deploy_etl_results(
+    df: pd.DataFrame,
+    summary: Dict[str, Any],
+    bucket_name: str,
+    project_name: str,
+    aws_access_key_id: Optional[str] = None,
+    aws_secret_access_key: Optional[str] = None,
+    region_name: str = "us-east-1",
+) -> Optional[str]:
     """Helper function to deploy ETL results as a static website.
-    
+
     Args:
         df: Processed DataFrame
         summary: ETL processing summary
@@ -388,7 +401,7 @@ def deploy_etl_results(df: pd.DataFrame,
         aws_access_key_id: AWS access key
         aws_secret_access_key: AWS secret key
         region_name: AWS region
-        
+
     Returns:
         Website URL if successful, None otherwise
     """
@@ -396,52 +409,50 @@ def deploy_etl_results(df: pd.DataFrame,
         # Create temporary directory for website files
         temp_dir = Path("temp_website")
         temp_dir.mkdir(exist_ok=True)
-        
+
         # Create templates directory
         templates_dir = temp_dir / "templates"
         templates_dir.mkdir(exist_ok=True)
-        
+
         # Initialise HTML generator
         html_generator = HTMLGenerator(str(templates_dir))
-        
+
         # Create default template if it doesn't exist
         template_path = templates_dir / "data_report.html"
         if not template_path.exists():
             html_generator.create_default_template(str(template_path))
-        
+
         # Generate HTML report
         html_path = temp_dir / "index.html"
         success = html_generator.generate_data_report(
-            df, 
-            summary, 
-            str(html_path),
-            title=f"{project_name} - Data Report"
+            df, summary, str(html_path), title=f"{project_name} - Data Report"
         )
-        
+
         if not success:
             return None
-        
+
         # Initialise S3 deployer
         s3_deployer = S3Deployer(
             bucket_name=bucket_name,
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
-            region_name=region_name
+            region_name=region_name,
         )
-        
+
         # Deploy to S3
         website_url = s3_deployer.deploy_website(
             str(temp_dir),
-            s3_prefix=project_name.lower().replace(' ', '-'),
-            enable_website=True
+            s3_prefix=project_name.lower().replace(" ", "-"),
+            enable_website=True,
         )
-        
+
         # Cleanup temporary directory
         import shutil
+
         shutil.rmtree(temp_dir)
-        
+
         return website_url
-        
+
     except Exception as e:
         logger.error(f"Error in deploy_etl_results: {e!s}")
-        return None 
+        return None
