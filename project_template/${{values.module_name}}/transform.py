@@ -59,9 +59,7 @@ class DataTransformer:
 
         # Example transformations - adjust based on your data structure
         if "quantity" in df.columns and "price" in df.columns:
-            df_transformed["total_value"] = (
-                df_transformed["quantity"] * df_transformed["price"]
-            )
+            df_transformed["total_value"] = df_transformed["quantity"] * df_transformed["price"]
             logger.info("Added total_value column")
             self.transformation_log.append("Added total_value column")
 
@@ -91,13 +89,9 @@ class DataTransformer:
             if column in df_filtered.columns:
                 if isinstance(criteria, dict):
                     if "min" in criteria:
-                        df_filtered = df_filtered[
-                            df_filtered[column] >= criteria["min"]
-                        ]
+                        df_filtered = df_filtered[df_filtered[column] >= criteria["min"]]
                     if "max" in criteria:
-                        df_filtered = df_filtered[
-                            df_filtered[column] <= criteria["max"]
-                        ]
+                        df_filtered = df_filtered[df_filtered[column] <= criteria["max"]]
                 elif isinstance(criteria, list):
                     df_filtered = df_filtered[df_filtered[column].isin(criteria)]
                 else:
@@ -155,8 +149,6 @@ def normalise_column_names(df: pd.DataFrame) -> pd.DataFrame:
         DataFrame with normalised column names
     """
     df_normalised = df.copy()
-    df_normalised.columns = (
-        df_normalised.columns.str.lower().str.replace(" ", "_").str.replace("-", "_")
-    )
+    df_normalised.columns = df_normalised.columns.str.lower().str.replace(" ", "_").str.replace("-", "_")
     logger.info("Column names normalised")
     return df_normalised

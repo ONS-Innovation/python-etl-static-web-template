@@ -3,10 +3,10 @@
 import logging
 from typing import Any, Dict, Optional
 
+from .deploy import HTMLGenerator, S3Deployer, deploy_etl_results
 from .extract import DataExtractor, extract_from_source
 from .load import DataLoader, create_data_summary, save_to_destination
 from .transform import DataTransformer, apply_business_rules, normalise_column_names
-from .deploy import HTMLGenerator, S3Deployer, deploy_etl_results
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +81,7 @@ class ETLPipeline:
                     "final_columns": len(df.columns),
                 }
             else:
-                self.pipeline_summary["transform"] = {
-                    "transformations_applied": ["None - transformations skipped"]
-                }
+                self.pipeline_summary["transform"] = {"transformations_applied": ["None - transformations skipped"]}
 
             # Load
             logger.info("Phase 3: Load")
@@ -117,9 +115,7 @@ class ETLPipeline:
                             "website_url": website_url,
                             "status": "success",
                         }
-                        logger.info(
-                            f"Deployment successful. Website URL: {website_url}"
-                        )
+                        logger.info(f"Deployment successful. Website URL: {website_url}")
                     else:
                         self.pipeline_summary["deploy"] = {"status": "failed"}
                         logger.warning("Deployment failed, but pipeline will continue")
@@ -166,9 +162,7 @@ def run_etl(
         True if pipeline completed successfully, False otherwise
     """
     pipeline = ETLPipeline()
-    return pipeline.run_pipeline(
-        source_path, output_path, source_type, output_format, **kwargs
-    )
+    return pipeline.run_pipeline(source_path, output_path, source_type, output_format, **kwargs)
 
 
 __all__ = [
@@ -182,4 +176,7 @@ __all__ = [
     "save_to_destination",
     "create_data_summary",
     "run_etl",
+    "deploy_etl_results",
+    "HTMLGenerator",
+    "S3Deployer",
 ]

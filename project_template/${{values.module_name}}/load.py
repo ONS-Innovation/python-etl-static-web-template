@@ -150,9 +150,7 @@ class DataLoader:
             return False
 
 
-def save_to_destination(
-    df: pd.DataFrame, output_path: str, format_type: str = "csv"
-) -> bool:
+def save_to_destination(df: pd.DataFrame, output_path: str, format_type: str = "csv") -> bool:
     """Helper function to save DataFrame to specified destination.
 
     Args:
