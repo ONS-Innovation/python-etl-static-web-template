@@ -1,0 +1,230 @@
+---
+name: ETL Pipeline and Deployment
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches: [${{ values.default_branch }}]
+  pull_request:
+    branches: [${{ values.default_branch }}]
+  workflow_dispatch:
+    inputs:
+      deploy_to_s3:
+        description: 'Deploy results to S3?'
+        required: false
+        default: 'true'
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write  # Required for AWS OIDC (if using)
+
+env:
+  S3_BUCKET_NAME: ${{ values.s3_bucket_name }}
+  AWS_REGION: ${{ values.aws_region }}
+  PROJECT_NAME: ${{ values.repository_name }}
+
+concurrency:
+  group: "etl-deploy-${{ github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  etl-pipeline:
+    name: Run ETL Pipeline
+    runs-on: ubuntu-22.04
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          {% if values.package_manager == 'poetry' %}
+          cache: poetry
+          {% else %}
+          cache: pip
+          {% endif %}
+
+      {% if values.package_manager == 'poetry' %}
+      - name: Install Poetry
+        run: pipx install poetry==1.8.3
+
+      - name: Install Dependencies
+        run: poetry install --no-root
+      {% else %}
+      - name: Install Pipenv
+        run: pip install pipenv
+
+      - name: Install Dependencies
+        run: pipenv install --dev
+      {% endif %}
+
+      - name: Run ETL Pipeline (Test Mode)
+        run: |
+          {% if values.package_manager == 'poetry' %}
+          poetry run python run_etl.py \
+            --source example_data.csv \
+            --output results/processed_data.csv \
+            --format csv
+          {% else %}
+          pipenv run python run_etl.py \
+            --source example_data.csv \
+            --output results/processed_data.csv \
+            --format csv
+          {% endif %}
+
+      - name: Upload ETL Results as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: etl-results
+          path: |
+            results/
+            !results/temp_*
+          retention-days: 30
+
+  deploy-to-s3:
+    name: Deploy to S3
+    runs-on: ubuntu-22.04
+    needs: etl-pipeline
+    if: >
+      (github.event_name == 'push' && github.ref == 'refs/heads/${{ values.default_branch }}') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy_to_s3 == 'true')
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download ETL Results
+        uses: actions/download-artifact@v4
+        with:
+          name: etl-results
+          path: results/
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: .python-version
+          {% if values.package_manager == 'poetry' %}
+          cache: poetry
+          {% else %}
+          cache: pip
+          {% endif %}
+
+      {% if values.package_manager == 'poetry' %}
+      - name: Install Poetry
+        run: pipx install poetry==1.8.3
+
+      - name: Install Dependencies
+        run: poetry install --no-root
+      {% else %}
+      - name: Install Pipenv
+        run: pip install pipenv
+
+      - name: Install Dependencies
+        run: pipenv install --dev
+      {% endif %}
+
+      {% if values.enable_github_secrets %}
+      - name: Configure AWS Credentials (GitHub Secrets)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
+            echo "::error::AWS credentials not found in GitHub Secrets"
+            echo "::error::Please add AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to repository secrets"
+            exit 1
+          fi
+          echo "AWS credentials configured from GitHub Secrets"
+      {% endif %}
+
+      - name: Deploy to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          {% if values.package_manager == 'poetry' %}
+          poetry run python -c "
+          {% else %}
+          pipenv run python -c "
+          {% endif %}
+          import pandas as pd
+          import json
+          from ${{ values.module_name }} import deploy_etl_results
+          
+          # Load processed data
+          df = pd.read_csv('results/processed_data.csv')
+          
+          # Load summary if exists
+          try:
+              with open('results/processed_data_summary.json', 'r') as f:
+                  summary = json.load(f)
+          except FileNotFoundError:
+              summary = {'note': 'No summary file found'}
+          
+          # Deploy to S3
+          website_url = deploy_etl_results(
+              df=df,
+              summary=summary,
+              bucket_name='${{ env.S3_BUCKET_NAME }}',
+              project_name='${{ env.PROJECT_NAME }}',
+              region_name='${{ env.AWS_REGION }}'
+          )
+          
+          if website_url:
+              print(f'✅ Deployment successful!')
+              print(f'🌐 Website URL: {website_url}')
+              
+              # Save URL for later steps
+              with open('website_url.txt', 'w') as f:
+                  f.write(website_url)
+          else:
+              print('❌ Deployment failed')
+              exit(1)
+          "
+
+      - name: Display Website URL
+        run: |
+          if [ -f website_url.txt ]; then
+            WEBSITE_URL=$(cat website_url.txt)
+            echo "🚀 ETL Pipeline completed successfully!"
+            echo "📊 Data Report is available at: $WEBSITE_URL"
+            echo ""
+            echo "### Deployment Summary" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ ETL Pipeline: **Completed**" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ S3 Deployment: **Successful**" >> $GITHUB_STEP_SUMMARY
+            echo "- 🌐 Website URL: [$WEBSITE_URL]($WEBSITE_URL)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Website URL not found"
+            exit 1
+          fi
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            try {
+              const websiteUrl = fs.readFileSync('website_url.txt', 'utf8').trim();
+              
+              const comment = `## 🚀 ETL Pipeline Preview
+              
+              Your ETL pipeline has been processed and deployed!
+              
+              **📊 Data Report:** [View Results](${websiteUrl})
+              
+              This preview was generated from the changes in this pull request.
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not read website URL file:', error.message);
+            } 

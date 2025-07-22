@@ -1,13 +1,73 @@
 [tool.poetry]
-name = "{{ repository_name }}"
-version = "0.1.0"
-description = "{{ repository_description }}"
-authors = ["{{ repository_owner }}"]
+name = "${{ values.repository_name }}"
+version = "0.2.0"
+description = "${{ values.repository_description }}"
+authors = ["${{ values.repository_owner }}"]
 license = "MIT"
 readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
+pandas = "^2.3.1"
+boto3 = "^1.39.10"
+jinja2 = "^3.1.6"
+copier = "^9.8.0"
 
 [tool.poetry.group.dev.dependencies]
+bandit = "^1.8.6"
+pytest = "^8.4.1"
+pytest-xdist = "^3.8.0"
+ruff = "^0.12.4"
+pytest-cov = "^6.2.1"
+copier = "^9.8.0"
+
+[tool.ruff.lint]
+select = [
+    # Enabling ALL is not recommended it will implicitly enable new rules after upgrade.
+    # "ALL",
+
+    # Ruff rules: https://docs.astral.sh/ruff/rules/
+
+    "E",      # pycodestyle erros
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "UP",     # pyupgrade
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "SIM",    # flake8-simplify
+    "C4",     # flake8-comprehensions
+    "S",      # flake8-bandit
+    "D",      # pydocstyle - Enforce existing docstrings only
+    "C90",    # mccabe
+    "RUF",    # Ruff specific rules
+]
+
+ignore = [
+    # Conflicts with google docstring style
+    "D205",
+    # Allow missing docstring, remove to enforce docstrings across the board
+    "D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107",
+    # indentation contains tabs
+    "W191",
+    # Too many args in functions
+    "PLR0913"
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    # Allow use of assert statements in tests
+    "S101",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]  # Skip assert_used test

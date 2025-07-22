@@ -154,6 +154,53 @@ spec:
                     type: string
                     description: What is your Python module name? (e.g. app/src/<module_name>)
 
+    - title: S3 Deployment Settings
+      properties:
+        enable_s3_deployment:
+          title: Enable S3 Static Website Deployment?
+          type: boolean
+          default: false
+          description: Enable automatic deployment of ETL results to S3 as a static website
+
+      dependencies:
+        enable_s3_deployment:
+          allOf:
+            - if:
+                properties:
+                  enable_s3_deployment:
+                    const: true
+              then:
+                required:
+                  - s3_bucket_name
+                  - aws_region
+                properties:
+                  s3_bucket_name:
+                    title: S3 Bucket Name
+                    type: string
+                    description: Name of the S3 bucket for static website hosting
+                    pattern: ^[a-z0-9][a-z0-9\-]*[a-z0-9]$
+                  aws_region:
+                    title: AWS Region
+                    type: string
+                    description: AWS region for the S3 bucket
+                    default: us-east-1
+                    enum:
+                      - us-east-1
+                      - us-east-2
+                      - us-west-1
+                      - us-west-2
+                      - eu-west-1
+                      - eu-west-2
+                      - eu-central-1
+                      - ap-southeast-1
+                      - ap-southeast-2
+                      - ap-northeast-1
+                  enable_github_secrets:
+                    title: Use GitHub Secrets for AWS Credentials?
+                    type: boolean
+                    default: true
+                    description: Store AWS credentials as GitHub Secrets (AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY)
+
   steps:
     - id: template
       name: Fetch Skeleton
@@ -178,6 +225,10 @@ spec:
           # computed values
           is_public_repo: ${{ parameters.repository_visibility == "public" }}
           package_manager_url: ${{ "https://python-poetry.org/" if parameters.package_manager == "poetry" else "https://pipenv.pypa.io/en/latest/" }}
+          enable_s3_deployment: ${{ parameters.enable_s3_deployment or false }}
+          s3_bucket_name: ${{ parameters.s3_bucket_name or "" }}
+          aws_region: ${{ parameters.aws_region or "us-east-1" }}
+          enable_github_secrets: ${{ parameters.enable_github_secrets or true }}
 
     - id: publish
       name: Publish

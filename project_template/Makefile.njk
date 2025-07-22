@@ -47,6 +47,36 @@ install-dev:  ## Install the dependencies including dev.
 	{%- endif %}
 
 .PHONY: run
-run:
-	${{ values.package_manager }} run python run_etl.py
+run: ## Run the ETL pipeline with example data.
+	${{ values.package_manager }} run python run_etl.py --source example_data.csv --output results/processed_data.csv
+
+{% if values.enable_s3_deployment %}
+.PHONY: run-deploy
+run-deploy: ## Run the ETL pipeline and deploy to S3.
+	${{ values.package_manager }} run python run_etl.py --source example_data.csv --output results/processed_data.csv --deploy
+
+.PHONY: deploy-only
+deploy-only: ## Deploy existing results to S3 (requires results/processed_data.csv).
+	@if [ ! -f results/processed_data.csv ]; then \
+		echo "❌ No processed data found. Run 'make run' first."; \
+		exit 1; \
+	fi
+	${{ values.package_manager }} run python run_etl.py --source example_data.csv --output results/processed_data.csv --deploy
+{% endif %}
+
+.PHONY: etl-help
+etl-help: ## Show ETL pipeline usage examples.
+	@echo "ETL Pipeline Commands:"
+	@echo ""
+	@echo "  make run           - Run ETL pipeline with example data"
+	{% if values.enable_s3_deployment %}
+	@echo "  make run-deploy    - Run ETL pipeline and deploy to S3"
+	@echo "  make deploy-only   - Deploy existing results to S3"
+	{% endif %}
+	@echo ""
+	@echo "Custom Usage:"
+	@echo "  ${{ values.package_manager }} run python run_etl.py --source your_data.csv --output results/your_output.csv"
+	{% if values.enable_s3_deployment %}
+	@echo "  ${{ values.package_manager }} run python run_etl.py --source your_data.csv --output results/your_output.csv --deploy"
+	{% endif %}
 

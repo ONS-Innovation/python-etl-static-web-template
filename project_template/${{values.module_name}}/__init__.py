@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 from .extract import DataExtractor, extract_from_source
 from .load import DataLoader, create_data_summary, save_to_destination
 from .transform import DataTransformer, apply_business_rules, normalise_column_names
+from .deploy import HTMLGenerator, S3Deployer, deploy_etl_results
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,11 @@ class ETLPipeline:
                     source_type: str = "csv",
                     output_format: str = "csv",
                     apply_transforms: bool = True,
-                    filters: Optional[Dict[str, Any]] = None) -> bool:
+                    filters: Optional[Dict[str, Any]] = None,
+                    enable_deployment: bool = False,
+                    s3_bucket_name: Optional[str] = None,
+                    project_name: Optional[str] = None,
+                    aws_region: str = "eu-west-2") -> bool:
         """Run the complete ETL pipeline.
 
         Args:
@@ -35,6 +40,10 @@ class ETLPipeline:
             output_format: Output format (csv, parquet, json)
             apply_transforms: Whether to apply transformations
             filters: Optional filters to apply
+            enable_deployment: Whether to deploy results to S3 as static website
+            s3_bucket_name: S3 bucket name for deployment
+            project_name: Project name for website title and S3 prefix
+            aws_region: AWS region for S3 bucket
 
         Returns:
             True if pipeline completed successfully, False otherwise
@@ -87,6 +96,27 @@ class ETLPipeline:
                     'final_rows': len(df),
                     'status': 'success'
                 }
+
+                # Deploy (Phase 4) - Optional
+                if enable_deployment and s3_bucket_name:
+                    logger.info("Phase 4: Deploy")
+                    website_url = deploy_etl_results(
+                        df=df,
+                        summary=self.pipeline_summary,
+                        bucket_name=s3_bucket_name,
+                        project_name=project_name or "ETL Results",
+                        region_name=aws_region
+                    )
+                    
+                    if website_url:
+                        self.pipeline_summary['deploy'] = {
+                            'website_url': website_url,
+                            'status': 'success'
+                        }
+                        logger.info(f"Deployment successful. Website URL: {website_url}")
+                    else:
+                        self.pipeline_summary['deploy'] = {'status': 'failed'}
+                        logger.warning("Deployment failed, but pipeline will continue")
 
                 logger.info("ETL pipeline completed successfully")
                 return True

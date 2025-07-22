@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-DEPENDENCIES=("pandas")
+DEPENDENCIES=("pandas" "boto3" "jinja2")
 DEV_DEPENDENCIES=("bandit" "pytest" "pytest-xdist" "ruff" "pytest-cov")
 TEMPLATE_DIR="../../project_template"
 
@@ -37,11 +37,11 @@ handle_package_manager() {
 
     # Copy lock files to the project_template
     if [[ "${package_manager}" == "poetry" ]]; then
-        cp -p poetry.lock "${TEMPLATE_DIR}/{% if $prefix %}poetry.lock{% endif %}.jinja"
-        cp -p pyproject.toml "${TEMPLATE_DIR}/{% if $prefix %}pyproject.toml{% endif %}.jinja"
+        cp -p poetry.lock "${TEMPLATE_DIR}/\${{ 'poetry.lock' if values.package_manager == 'poetry' }}.njk"
+        cp -p pyproject.toml "${TEMPLATE_DIR}/\${{ 'pyproject.toml' if values.package_manager == 'poetry' }}.njk"
     elif [[ "${package_manager}" == "pipenv" ]]; then
-        cp -p Pipfile.lock "${TEMPLATE_DIR}/{% if $prefix %}Pipfile.lock{% endif %}.jinja"
-        cp -p Pipfile "${TEMPLATE_DIR}/{% if $prefix %}Pipfile{% endif %}.jinja"
+        cp -p Pipfile.lock "${TEMPLATE_DIR}/\${{ 'Pipfile.lock' if values.package_manager == 'pipenv' }}.njk"
+        cp -p Pipfile "${TEMPLATE_DIR}/\${{ 'Pipfile' if values.package_manager == 'pipenv' }}.njk"
     fi
 
     echo "Copied lock files for ${package_manager}"
