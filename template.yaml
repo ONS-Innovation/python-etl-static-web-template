@@ -1,9 +1,9 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: ons-python-template-etl
-  title: Python ETL Template
-  description: A basic ETL pipeline Python template to jump start a Python project
+  name: python-etl-static-web-template
+  title: Python ETL Static Web Template
+  description: A basic ETL pipeline Python template to jump start a Python project with a static web frontend
   tags:
     - python
     - etl
