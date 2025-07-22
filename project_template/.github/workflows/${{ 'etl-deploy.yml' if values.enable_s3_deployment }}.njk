@@ -24,7 +24,7 @@ env:
   PROJECT_NAME: ${{ values.repository_name }}
 
 concurrency:
-  group: "etl-deploy-${{ github.head_ref || github.ref }}"
+  group: "etl-deploy-${{ github.head_ref }}"
   cancel-in-progress: true
 
 jobs:
