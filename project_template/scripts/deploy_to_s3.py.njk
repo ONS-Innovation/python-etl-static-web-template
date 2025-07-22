@@ -4,7 +4,8 @@ import os
 import sys
 
 # Import the deploy_etl_results function from the main module
-from ${{ values.module_name }} import deploy_etl_results
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from ${{ values.module_name }}.deploy import deploy_etl_results
 
 # Paths
 data_path = 'results/processed_data.csv'
