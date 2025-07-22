@@ -31,7 +31,7 @@ jobs:
   etl-pipeline:
     name: Run ETL Pipeline
     runs-on: ubuntu-22.04
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -61,7 +61,7 @@ jobs:
 {% endif %}
 
       - name: Run ETL Pipeline (Test Mode)
-        run: >
+        run: |
 {% if values.package_manager == 'poetry' %}
           poetry run python run_etl.py --source example_data.csv --output results/processed_data.csv --format csv
 {% else %}
@@ -84,7 +84,7 @@ jobs:
     if: >
       (github.event_name == 'push' && github.ref == 'refs/heads/${{ values.default_branch }}') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy_to_s3 == 'true')
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -137,7 +137,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: >
+        run: |
 {% if values.package_manager == 'poetry' %}
           poetry run python -c "
 {% else %}
@@ -169,7 +169,7 @@ website_url = deploy_etl_results(
 if website_url:
     print(f'✅ Deployment successful!')
     print(f'🌐 Website URL: {website_url}')
-    
+
     # Save URL for later steps
     with open('website_url.txt', 'w') as f:
         f.write(website_url)
@@ -200,19 +200,19 @@ else:
         with:
           script: |
             const fs = require('fs');
-            
+
             try {
               const websiteUrl = fs.readFileSync('website_url.txt', 'utf8').trim();
-              
+
               const comment = `## 🚀 ETL Pipeline Preview
-              
+
               Your ETL pipeline has been processed and deployed!
-              
+
               **📊 Data Report:** [View Results](${websiteUrl})
-              
+
               This preview was generated from the changes in this pull request.
               `;
-              
+
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
@@ -221,4 +221,4 @@ else:
               });
             } catch (error) {
               console.log('Could not read website URL file:', error.message);
-            } 
+            }
