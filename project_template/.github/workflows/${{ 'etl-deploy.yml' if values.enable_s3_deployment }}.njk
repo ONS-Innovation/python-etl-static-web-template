@@ -139,10 +139,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
 {% if values.package_manager == 'poetry' %}
-          poetry run python -c "
-{% else %}
-          pipenv run python -c "
-{% endif %}
+        run: |
+          poetry run python - <<EOF
 import pandas as pd
 import json
 from ${{ values.module_name }} import deploy_etl_results
@@ -176,7 +174,45 @@ if website_url:
 else:
     print('❌ Deployment failed')
     exit(1)
-"
+EOF
+{% else %}
+        run: |
+          pipenv run python - <<EOF
+import pandas as pd
+import json
+from ${{ values.module_name }} import deploy_etl_results
+
+# Load processed data
+df = pd.read_csv('results/processed_data.csv')
+
+# Load summary if exists
+try:
+    with open('results/processed_data_summary.json', 'r') as f:
+        summary = json.load(f)
+except FileNotFoundError:
+    summary = {'note': 'No summary file found'}
+
+# Deploy to S3
+website_url = deploy_etl_results(
+    df=df,
+    summary=summary,
+    bucket_name='${{ env.S3_BUCKET_NAME }}',
+    project_name='${{ env.PROJECT_NAME }}',
+    region_name='${{ env.AWS_REGION }}'
+)
+
+if website_url:
+    print(f'✅ Deployment successful!')
+    print(f'🌐 Website URL: {website_url}')
+
+    # Save URL for later steps
+    with open('website_url.txt', 'w') as f:
+        f.write(website_url)
+else:
+    print('❌ Deployment failed')
+    exit(1)
+EOF
+{% endif %}
 
       - name: Display Website URL
         run: |
