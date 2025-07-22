@@ -190,7 +190,7 @@ spec:
                   deploy_on_pr:
                     title: Deploy on PR?
                     type: boolean
-                    default: true
+                    default: false
                     description: Deploy the ETL results to S3 on PRs not just on push to main
                   enable_github_secrets:
                     title: Use GitHub Secrets for AWS Credentials?
