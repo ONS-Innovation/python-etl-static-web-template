@@ -230,6 +230,12 @@ spec:
           aws_region: ${{ parameters.aws_region or "us-east-1" }}
           enable_github_secrets: ${{ parameters.enable_github_secrets or true }}
 
+    - id: debug
+      name: Show Context
+      action: debug:log
+      input:
+        message: ${{ user }}
+
     - id: publish
       name: Publish
       action: publish:github
