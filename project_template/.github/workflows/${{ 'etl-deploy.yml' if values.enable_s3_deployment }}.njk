@@ -84,10 +84,11 @@ jobs:
     name: Deploy to S3
     runs-on: ubuntu-22.04
     needs: etl-pipeline
+    {% if values.deploy_on_pr %}
     if: >
       (github.event_name == 'push' && github.ref == 'refs/heads/${{ values.default_branch }}') ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy_to_s3 == 'true')
-
+    {% endif %}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
