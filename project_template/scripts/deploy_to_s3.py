@@ -1,0 +1,52 @@
+import pandas as pd
+import json
+import os
+import sys
+
+# Import the deploy_etl_results function from the main module
+from ${{ values.module_name }} import deploy_etl_results
+
+# Paths
+data_path = 'results/processed_data.csv'
+summary_path = 'results/processed_data_summary.json'
+
+# Load processed data
+try:
+    df = pd.read_csv(data_path)
+except Exception as e:
+    print(f'Failed to load processed data: {e}')
+    sys.exit(1)
+
+# Load summary if exists
+try:
+    with open(summary_path, 'r') as f:
+        summary = json.load(f)
+except FileNotFoundError:
+    summary = {'note': 'No summary file found'}
+
+# Get environment variables for deployment
+bucket_name = os.environ.get('S3_BUCKET_NAME')
+project_name = os.environ.get('PROJECT_NAME')
+region_name = os.environ.get('AWS_REGION', 'eu-west-2')
+
+if not bucket_name or not project_name:
+    print('S3_BUCKET_NAME and PROJECT_NAME environment variables are required')
+    sys.exit(1)
+
+# Deploy to S3
+website_url = deploy_etl_results(
+    df=df,
+    summary=summary,
+    bucket_name=bucket_name,
+    project_name=project_name,
+    region_name=region_name
+)
+
+if website_url:
+    print('Deployment successful!')
+    print(f'Website URL: {website_url}')
+    with open('website_url.txt', 'w') as f:
+        f.write(website_url)
+else:
+    print('Deployment failed')
+    sys.exit(1)
