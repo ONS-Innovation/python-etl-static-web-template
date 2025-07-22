@@ -270,6 +270,14 @@ spec:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: /catalog-info.yaml
 
+    - id: add-collaborator
+      name: Add Creator as Collaborator
+      action: github:repo:add-collaborator
+      input:
+        repoUrl: github.com?owner=${{ parameters.repository_owner }}&repo=${{ parameters.repository_name }}
+        username: ${{ user.entity.metadata.annotations['github.com/user-login'] }}
+        permission: admin
+
   output:
     links:
       - title: Repository
