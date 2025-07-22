@@ -81,6 +81,126 @@ make install
 make run
 ```
 
+## ETL Pipeline Usage
+
+This project includes a complete ETL (Extract, Transform, Load) pipeline for processing data{% if values.enable_s3_deployment %} with optional deployment to S3 as a static website{% endif %}.
+
+### Basic Usage
+
+Run the ETL pipeline with the provided example data:
+
+```bash
+{% if values.package_manager == 'poetry' %}
+poetry run python run_etl.py --source example_data.csv --output results/processed_data.csv
+{% else %}
+pipenv run python run_etl.py --source example_data.csv --output results/processed_data.csv
+{% endif %}
+```
+
+### Command Line Options
+
+```bash
+# Basic usage
+python run_etl.py --source data.csv --output results/processed.csv
+
+# Skip data transformations
+python run_etl.py --source data.csv --output results/raw.csv --no-transforms
+
+# Different output formats
+python run_etl.py --source data.csv --output results/data.parquet --format parquet
+python run_etl.py --source data.csv --output results/data.json --format json
+
+# Verbose logging
+python run_etl.py --source data.csv --output results/data.csv --verbose
+```
+
+{% if values.enable_s3_deployment %}
+### S3 Deployment
+
+Deploy your processed data as a beautiful, interactive web report:
+
+```bash
+# Deploy to S3 (uses template configuration)
+{% if values.package_manager == 'poetry' %}
+poetry run python run_etl.py --source example_data.csv --output results/processed_data.csv --deploy
+{% else %}
+pipenv run python run_etl.py --source example_data.csv --output results/processed_data.csv --deploy
+{% endif %}
+
+# Deploy with custom S3 bucket and project name
+python run_etl.py --source data.csv --output results/data.csv --deploy \
+  --s3-bucket my-custom-bucket --project-name "My Analytics Dashboard"
+```
+
+#### Setup AWS Credentials
+
+Before deploying to S3, ensure your AWS credentials are configured:
+
+**Option 1: GitHub Secrets (Recommended for CI/CD)**
+Add the following secrets to your GitHub repository:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+
+**Option 2: Environment Variables**
+```bash
+export AWS_ACCESS_KEY_ID=your_access_key
+export AWS_SECRET_ACCESS_KEY=your_secret_key
+export S3_BUCKET_NAME=${{ values.s3_bucket_name }}
+export AWS_REGION=${{ values.aws_region }}
+```
+
+#### Automated Deployment
+
+The repository includes a GitHub Actions workflow that automatically:
+1. Runs the ETL pipeline on push to main branch
+2. Deploys results to S3 as a static website
+3. Provides the website URL in workflow output
+
+Access the workflow at: `.github/workflows/etl-deploy.yml`
+{% endif %}
+
+### ETL Pipeline Components
+
+The pipeline consists of four main components:
+
+1. **Extract** (`${{ values.module_name }}/extract.py`): Load data from various sources (CSV, Excel, JSON)
+2. **Transform** (`${{ values.module_name }}/transform.py`): Clean, validate, and enhance data
+3. **Load** (`${{ values.module_name }}/load.py`): Save processed data in multiple formats
+{% if values.enable_s3_deployment %}4. **Deploy** (`${{ values.module_name }}/deploy.py`): Generate HTML reports and deploy to S3{% endif %}
+
+### Programmatic Usage
+
+```python
+from ${{ values.module_name }} import ETLPipeline
+
+# Initialize pipeline
+pipeline = ETLPipeline()
+
+# Run with basic options
+success = pipeline.run_pipeline(
+    source_path="data.csv",
+    output_path="results/processed.csv",
+    apply_transforms=True
+)
+
+{% if values.enable_s3_deployment %}
+# Run with S3 deployment
+success = pipeline.run_pipeline(
+    source_path="data.csv",
+    output_path="results/processed.csv",
+    enable_deployment=True,
+    s3_bucket_name="my-bucket",
+    project_name="My Project"
+)
+
+# Get website URL from pipeline summary
+if success:
+    summary = pipeline.get_pipeline_summary()
+    if 'deploy' in summary:
+        print(f"Website URL: {summary['deploy']['website_url']}")
+{% endif %}
+```
+
 ## Development
 
 Get started with development by running the following commands.
