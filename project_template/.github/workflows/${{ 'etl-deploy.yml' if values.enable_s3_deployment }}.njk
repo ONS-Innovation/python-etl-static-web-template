@@ -40,39 +40,33 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version-file: .python-version
-          {% if values.package_manager == 'poetry' %}
+{% if values.package_manager == 'poetry' %}
           cache: poetry
-          {% else %}
+{% else %}
           cache: pip
-          {% endif %}
+{% endif %}
 
-      {% if values.package_manager == 'poetry' %}
+{% if values.package_manager == 'poetry' %}
       - name: Install Poetry
         run: pipx install poetry==1.8.3
 
       - name: Install Dependencies
         run: poetry install --no-root
-      {% else %}
+{% else %}
       - name: Install Pipenv
         run: pip install pipenv
 
       - name: Install Dependencies
         run: pipenv install --dev
-      {% endif %}
+{% endif %}
 
       - name: Run ETL Pipeline (Test Mode)
-        run: |
-          {% if values.package_manager == 'poetry' %}
-          poetry run python run_etl.py \
-            --source example_data.csv \
-            --output results/processed_data.csv \
-            --format csv
-          {% else %}
-          pipenv run python run_etl.py \
-            --source example_data.csv \
-            --output results/processed_data.csv \
-            --format csv
-          {% endif %}
+        run: >
+{% if values.package_manager == 'poetry' %}
+          poetry run python run_etl.py --source example_data.csv --output results/processed_data.csv --format csv
+{% else %}
+          pipenv run python run_etl.py --source example_data.csv --output results/processed_data.csv --format csv
+{% endif %}
 
       - name: Upload ETL Results as Artifacts
         uses: actions/upload-artifact@v4
@@ -105,27 +99,27 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version-file: .python-version
-          {% if values.package_manager == 'poetry' %}
+{% if values.package_manager == 'poetry' %}
           cache: poetry
-          {% else %}
+{% else %}
           cache: pip
-          {% endif %}
+{% endif %}
 
-      {% if values.package_manager == 'poetry' %}
+{% if values.package_manager == 'poetry' %}
       - name: Install Poetry
         run: pipx install poetry==1.8.3
 
       - name: Install Dependencies
         run: poetry install --no-root
-      {% else %}
+{% else %}
       - name: Install Pipenv
         run: pip install pipenv
 
       - name: Install Dependencies
         run: pipenv install --dev
-      {% endif %}
+{% endif %}
 
-      {% if values.enable_github_secrets %}
+{% if values.enable_github_secrets %}
       - name: Configure AWS Credentials (GitHub Secrets)
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -137,52 +131,52 @@ jobs:
             exit 1
           fi
           echo "AWS credentials configured from GitHub Secrets"
-      {% endif %}
+{% endif %}
 
       - name: Deploy to S3
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          {% if values.package_manager == 'poetry' %}
+        run: >
+{% if values.package_manager == 'poetry' %}
           poetry run python -c "
-          {% else %}
+{% else %}
           pipenv run python -c "
-          {% endif %}
-          import pandas as pd
-          import json
-          from ${{ values.module_name }} import deploy_etl_results
-          
-          # Load processed data
-          df = pd.read_csv('results/processed_data.csv')
-          
-          # Load summary if exists
-          try:
-              with open('results/processed_data_summary.json', 'r') as f:
-                  summary = json.load(f)
-          except FileNotFoundError:
-              summary = {'note': 'No summary file found'}
-          
-          # Deploy to S3
-          website_url = deploy_etl_results(
-              df=df,
-              summary=summary,
-              bucket_name='${{ env.S3_BUCKET_NAME }}',
-              project_name='${{ env.PROJECT_NAME }}',
-              region_name='${{ env.AWS_REGION }}'
-          )
-          
-          if website_url:
-              print(f'✅ Deployment successful!')
-              print(f'🌐 Website URL: {website_url}')
-              
-              # Save URL for later steps
-              with open('website_url.txt', 'w') as f:
-                  f.write(website_url)
-          else:
-              print('❌ Deployment failed')
-              exit(1)
-          "
+{% endif %}
+import pandas as pd
+import json
+from ${{ values.module_name }} import deploy_etl_results
+
+# Load processed data
+df = pd.read_csv('results/processed_data.csv')
+
+# Load summary if exists
+try:
+    with open('results/processed_data_summary.json', 'r') as f:
+        summary = json.load(f)
+except FileNotFoundError:
+    summary = {'note': 'No summary file found'}
+
+# Deploy to S3
+website_url = deploy_etl_results(
+    df=df,
+    summary=summary,
+    bucket_name='${{ env.S3_BUCKET_NAME }}',
+    project_name='${{ env.PROJECT_NAME }}',
+    region_name='${{ env.AWS_REGION }}'
+)
+
+if website_url:
+    print(f'✅ Deployment successful!')
+    print(f'🌐 Website URL: {website_url}')
+    
+    # Save URL for later steps
+    with open('website_url.txt', 'w') as f:
+        f.write(website_url)
+else:
+    print('❌ Deployment failed')
+    exit(1)
+"
 
       - name: Display Website URL
         run: |
