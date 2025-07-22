@@ -63,11 +63,24 @@ class HTMLGenerator:
                     if len(df.select_dtypes(include=["number"]).columns) > 0
                     else None
                 ),
+                # Add a banner message to the template context
+                "public_access_banner": (
+                    "⚠️ <strong>This site is publicly accessible.</strong> "
+                    "If you have published sensitive data, please revert."
+                ),
             }
 
             # Load and render template
             template = self.env.get_template("data_report.html")
             html_content = template.render(**template_data)
+            # Insert the banner at the very top of the HTML content
+            banner_html = (
+                '<div style="background: #fff3cd; color: #856404; border: 1px solid #ffeeba; '
+                'padding: 12px; text-align: center; font-weight: bold; font-size: 1.1em; margin-bottom: 20px;">'
+                f'{template_data["public_access_banner"]}'
+                '</div>'
+            )
+            html_content = banner_html + html_content
 
             # Ensure output directory exists
             output_dir = Path(output_path).parent
@@ -343,9 +356,9 @@ class S3Deployer:
     def _get_website_url(self) -> str:
         """Get the static website URL for the bucket."""
         if self.region_name == "us-east-1":
-            return f"http://{self.bucket_name}.s3-website-us-east-1.amazonaws.com"
+            return f"http://{self.bucket_name}.s3.us-east-1.amazonaws.com/${{values.module_name}}/index.html"
         else:
-            return f"http://{self.bucket_name}.s3-website-{self.region_name}.amazonaws.com"
+            return f"http://{self.bucket_name}.s3.{self.region_name}.amazonaws.com/${{values.module_name}}/index.html"
 
     def _get_content_type(self, file_extension: str) -> str:
         """Get appropriate content type for file extension."""
