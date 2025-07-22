@@ -187,6 +187,11 @@ spec:
                     enum:
                       - eu-west-2
                       - eu-west-1
+                  deploy_on_pr:
+                    title: Deploy on PR?
+                    type: boolean
+                    default: true
+                    description: Deploy the ETL results to S3 on PRs not just on push to main
                   enable_github_secrets:
                     title: Use GitHub Secrets for AWS Credentials?
                     type: boolean
@@ -221,6 +226,7 @@ spec:
           s3_bucket_name: ${{ parameters.s3_bucket_name or "" }}
           aws_region: ${{ parameters.aws_region or "us-east-1" }}
           enable_github_secrets: ${{ parameters.enable_github_secrets or true }}
+          deploy_on_pr: ${{ parameters.deploy_on_pr or true }}
 
     - id: publish
       name: Publish
@@ -231,7 +237,7 @@ spec:
         repoVisibility: ${{ parameters.repository_visibility }}
         defaultBranch: ${{ parameters.default_branch }}
         access: ${{ user.entity.metadata.annotations['github.com/user-login'] }}
-  
+
         hasIssues: true
         hasProjects: false
         hasWiki: false
