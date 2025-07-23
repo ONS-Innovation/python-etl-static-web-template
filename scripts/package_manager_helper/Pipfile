@@ -4,18 +4,18 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pandas = "==2.3.1"
-boto3 = "==1.39.11"
-jinja2 = "==3.1.6"
-copier = "==9.8.0"
+copier = "*"
+pandas = "*"
+boto3 = "*"
+jinja2 = "*"
 
 [dev-packages]
-bandit = "==1.8.6"
-pytest = "==8.4.1"
-pytest-xdist = "==3.8.0"
-ruff = "==0.12.4"
-pytest-cov = "==6.2.1"
-copier = "==9.8.0"
+copier = "*"
+bandit = "*"
+pytest = "*"
+pytest-xdist = "*"
+ruff = "*"
+pytest-cov = "*"
 
 [requires]
 python_version = "3.10"
