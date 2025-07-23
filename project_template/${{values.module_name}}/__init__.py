@@ -1,7 +1,7 @@
 """ETL Pipeline Module."""
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from .deploy import HTMLGenerator, S3Deployer, deploy_etl_results
 from .extract import DataExtractor, extract_from_source
@@ -27,7 +27,7 @@ class ETLPipeline:
         source_type: str = "csv",
         output_format: str = "csv",
         apply_transforms: bool = True,
-        filters: Optional[Dict[str, Any]] = None,
+        filters: Optional[dict[str, Any]] = None,
         enable_deployment: bool = False,
         s3_bucket_name: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -132,11 +132,11 @@ class ETLPipeline:
             self.pipeline_summary["error"] = str(e)
             return False
 
-    def get_pipeline_summary(self) -> Dict[str, Any]:
+    def get_pipeline_summary(self) -> dict[str, Any]:
         """Get summary of the pipeline execution.
 
         Returns:
-            Dictionary with pipeline execution summary
+            dictionary with pipeline execution summary
         """
         return self.pipeline_summary.copy()
 
@@ -167,16 +167,16 @@ def run_etl(
 
 __all__ = [
     "DataExtractor",
-    "DataTransformer",
     "DataLoader",
+    "DataTransformer",
     "ETLPipeline",
-    "extract_from_source",
-    "apply_business_rules",
-    "normalise_column_names",
-    "save_to_destination",
-    "create_data_summary",
-    "run_etl",
-    "deploy_etl_results",
     "HTMLGenerator",
     "S3Deployer",
+    "apply_business_rules",
+    "create_data_summary",
+    "deploy_etl_results",
+    "extract_from_source",
+    "normalise_column_names",
+    "run_etl",
+    "save_to_destination",
 ]

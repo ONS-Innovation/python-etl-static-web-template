@@ -1,7 +1,5 @@
 
-"""
-ETL Pipeline runner script with command-line interface and optional S3 deployment.
-"""
+"""ETL Pipeline runner script with command-line interface and optional S3 deployment."""
 
 import argparse
 import logging
@@ -70,7 +68,7 @@ Examples:
     )
 
     # Deployment options
-    {% if values.enable_s3_deployment %}
+{% if values.enable_s3_deployment %}
     parser.add_argument(
         '--deploy',
         action='store_true',
@@ -91,7 +89,7 @@ Examples:
         default='${{ values.repository_name }}',
         help='Project name for website title and S3 prefix'
     )
-    {% endif %}
+{% endif %}
 
     parser.add_argument(
         '--verbose', '-v',
@@ -102,8 +100,8 @@ Examples:
     return parser
 
 
-def main():
-    """Main function to run ETL pipeline with command-line interface."""
+def start_pipeline():
+    """Start the ETL pipeline with command-line interface."""
     parser = create_parser()
     args = parser.parse_args()
 
@@ -132,7 +130,7 @@ def main():
         'apply_transforms': not args.no_transforms,
     }
 
-    {% if values.enable_s3_deployment %}
+{% if values.enable_s3_deployment %}
     # Add deployment arguments if enabled
     if args.deploy:
         if not args.s3_bucket:
@@ -147,7 +145,7 @@ def main():
         })
 
         logger.info(f"Deployment enabled - S3 bucket: {args.s3_bucket}, Region: {args.aws_region}")
-    {% endif %}
+{% endif %}
 
     # Run the pipeline
     logger.info("Starting ETL pipeline...")
@@ -159,33 +157,33 @@ def main():
         success = pipeline.run_pipeline(**pipeline_args)
 
         if success:
-            logger.info("🎉 ETL pipeline completed successfully!")
+            logger.info("ETL pipeline completed successfully!")
 
             # Display summary
             summary = pipeline.get_pipeline_summary()
-            logger.info("\n📊 Pipeline Summary:")
-            logger.info(f"  📥 Rows extracted: {summary['extract']['rows_extracted']}")
-            
-            if 'transform' in summary:
-                logger.info(f"  🔄 Final rows after transform: {summary['transform']['final_rows']}")
-                logger.info(f"  ⚙️  Transformations applied: {len(summary['transform']['transformations_applied'])}")
-            
-            if 'load' in summary:
-                logger.info(f"  💾 Output file: {summary['load']['output_path']}")
+            logger.info("\nPipeline Summary:")
+            logger.info(f"  Rows extracted: {summary['extract']['rows_extracted']}")
 
-            {% if values.enable_s3_deployment %}
+            if 'transform' in summary:
+                logger.info(f"  Final rows after transform: {summary['transform']['final_rows']}")
+                logger.info(f"  Transformations applied: {len(summary['transform']['transformations_applied'])}")
+
+            if 'load' in summary:
+                logger.info(f"  Output file: {summary['load']['output_path']}")
+
+{% if values.enable_s3_deployment %}
             if 'deploy' in summary and summary['deploy']['status'] == 'success':
                 website_url = summary['deploy']['website_url']
-                logger.info(f"  🌐 Website URL: {website_url}")
-                print(f"\n🚀 Your data report is live at: {website_url}")
-            {% endif %}
+                logger.info(f"  Website URL: {website_url}")
+                print(f"\nYour data report is live at: {website_url}")
+{% endif %}
 
         else:
-            logger.error("❌ ETL pipeline failed!")
+            logger.error("ETL pipeline failed!")
             sys.exit(1)
 
     except Exception as e:
-        logger.error(f"❌ ETL pipeline failed with error: {e}")
+        logger.error(f"ETL pipeline failed with error: {e}")
         if args.verbose:
             import traceback
             traceback.print_exc()
@@ -193,4 +191,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    start_pipeline()

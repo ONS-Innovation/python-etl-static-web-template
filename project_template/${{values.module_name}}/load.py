@@ -1,7 +1,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
@@ -126,7 +126,7 @@ class DataLoader:
             self.load_summary[output_path] = {"status": "failed", "error": str(e)}
             return False
 
-    def get_load_summary(self) -> Dict[str, Any]:
+    def get_load_summary(self) -> dict[str, Any]:
         """Get summary of all load operations.
 
         Returns:

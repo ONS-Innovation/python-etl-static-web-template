@@ -1,7 +1,8 @@
-import pandas as pd
 import json
 import os
 import sys
+
+import pandas as pd
 
 # Import the deploy_etl_results function from the main module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -20,7 +21,7 @@ except Exception as e:
 
 # Load summary if exists
 try:
-    with open(summary_path, 'r') as f:
+    with open(summary_path) as f:
         summary = json.load(f)
 except FileNotFoundError:
     summary = {'note': 'No summary file found'}
