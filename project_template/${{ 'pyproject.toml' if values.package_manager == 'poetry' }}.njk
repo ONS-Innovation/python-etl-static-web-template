@@ -22,6 +22,9 @@ ruff = "^0.12.4"
 pytest-cov = "^6.2.1"
 copier = "^9.8.0"
 
+[tool.ruff]
+line-length = 150
+
 [tool.ruff.lint]
 select = [
     # Enabling ALL is not recommended it will implicitly enable new rules after upgrade.
@@ -67,7 +70,6 @@ convention = "google"
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
-line-length = 150
 
 [tool.bandit]
 exclude_dirs = ["tests"]
