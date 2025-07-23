@@ -100,15 +100,8 @@ Examples:
     return parser
 
 
-def start_etl():
-    """Start the ETL pipeline with command-line interface."""
-    parser = create_parser()
-    args = parser.parse_args()
-
-    # Configure logging level
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-
+def validate_arguments(args):
+    """Validate command-line arguments."""
     # Validate source file exists
     if not Path(args.source).exists():
         logger.error(f"Source file not found: {args.source}")
@@ -118,10 +111,15 @@ def start_etl():
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Initialize ETL pipeline
-    pipeline = ETLPipeline()
 
-    # Prepare pipeline arguments
+def configure_logging(args):
+    """Configure logging based on command-line arguments."""
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+
+def prepare_pipeline_args(args):
+    """Prepare arguments for the ETL pipeline."""
     pipeline_args = {
         'source_path': args.source,
         'output_path': args.output,
@@ -147,46 +145,78 @@ def start_etl():
         logger.info(f"Deployment enabled - S3 bucket: {args.s3_bucket}, Region: {args.aws_region}")
 {% endif %}
 
-    # Run the pipeline
+    return pipeline_args
+
+
+def log_pipeline_start(args):
+    """Log pipeline start information."""
     logger.info("Starting ETL pipeline...")
     logger.info(f"Source: {args.source}")
     logger.info(f"Output: {args.output}")
     logger.info(f"Transformations: {'Enabled' if not args.no_transforms else 'Disabled'}")
 
-    try:
-        success = pipeline.run_pipeline(**pipeline_args)
 
-        if success:
-            logger.info("ETL pipeline completed successfully!")
+def display_pipeline_summary(pipeline):
+    """Display pipeline execution summary."""
+    summary = pipeline.get_pipeline_summary()
+    logger.info("\nPipeline Summary:")
+    logger.info(f"  Rows extracted: {summary['extract']['rows_extracted']}")
 
-            # Display summary
-            summary = pipeline.get_pipeline_summary()
-            logger.info("\nPipeline Summary:")
-            logger.info(f"  Rows extracted: {summary['extract']['rows_extracted']}")
+    if 'transform' in summary:
+        logger.info(f"  Final rows after transform: {summary['transform']['final_rows']}")
+        logger.info(f"  Transformations applied: {len(summary['transform']['transformations_applied'])}")
 
-            if 'transform' in summary:
-                logger.info(f"  Final rows after transform: {summary['transform']['final_rows']}")
-                logger.info(f"  Transformations applied: {len(summary['transform']['transformations_applied'])}")
-
-            if 'load' in summary:
-                logger.info(f"  Output file: {summary['load']['output_path']}")
+    if 'load' in summary:
+        logger.info(f"  Output file: {summary['load']['output_path']}")
 
 {% if values.enable_s3_deployment %}
-            if 'deploy' in summary and summary['deploy']['status'] == 'success':
-                website_url = summary['deploy']['website_url']
-                logger.info(f"  Website URL: {website_url}")
-                print(f"\nYour data report is live at: {website_url}")
+    if 'deploy' in summary and summary['deploy']['status'] == 'success':
+        website_url = summary['deploy']['website_url']
+        logger.info(f"  Website URL: {website_url}")
+        print(f"\nYour data report is live at: {website_url}")
 {% endif %}
 
-        else:
-            logger.error("ETL pipeline failed!")
-            sys.exit(1)
 
+def run_pipeline(pipeline_args):
+    """Execute the ETL pipeline with error handling."""
+    pipeline = ETLPipeline()
+
+    try:
+        success = pipeline.run_pipeline(**pipeline_args)
+        return success, pipeline
     except Exception as e:
         logger.error(f"ETL pipeline failed with error: {e}")
         if args.verbose:
             import traceback
             traceback.print_exc()
+        sys.exit(1)
+
+
+def start_etl():
+    """Start the ETL pipeline with command-line interface."""
+    parser = create_parser()
+    args = parser.parse_args()
+
+    # Configure logging level
+    configure_logging(args)
+
+    # Validate arguments
+    validate_arguments(args)
+
+    # Prepare pipeline arguments
+    pipeline_args = prepare_pipeline_args(args)
+
+    # Log pipeline start
+    log_pipeline_start(args)
+
+    # Run the pipeline
+    success, pipeline = run_pipeline(pipeline_args)
+
+    if success:
+        logger.info("ETL pipeline completed successfully!")
+        display_pipeline_summary(pipeline)
+    else:
+        logger.error("ETL pipeline failed!")
         sys.exit(1)
 
 
