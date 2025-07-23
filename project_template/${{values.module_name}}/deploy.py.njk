@@ -130,7 +130,6 @@ class HTMLGenerator:
             </div>
         </div>
 
-        <!-- Summary Metrics -->
         <div class="row summary-card">
             <div class="col-md-3">
                 <div class="card metric">
@@ -158,8 +157,7 @@ class HTMLGenerator:
             </div>
         </div>
 
-        <!-- Processing Summary -->
-        {% if summary %}
+{% if summary %}
         <div class="row">
             <div class="col-12">
                 <h3>Processing Summary</h3>
@@ -170,9 +168,8 @@ class HTMLGenerator:
                 </div>
             </div>
         </div>
-        {% endif %}
+{% endif %}
 
-        <!-- Data Preview -->
         <div class="row mt-4">
             <div class="col-12">
                 <h3>Data Preview (First 10 Rows)</h3>
@@ -182,8 +179,7 @@ class HTMLGenerator:
             </div>
         </div>
 
-        <!-- Statistical Summary -->
-        {% if numeric_summary %}
+{% if numeric_summary %}
         <div class="row mt-4">
             <div class="col-12">
                 <h3>Statistical Summary</h3>
@@ -192,9 +188,8 @@ class HTMLGenerator:
                 </div>
             </div>
         </div>
-        {% endif %}
+{% endif %}
 
-        <!-- Column Information -->
         <div class="row mt-4">
             <div class="col-12">
                 <h3>Column Information</h3>
