@@ -136,10 +136,7 @@ def apply_business_rules(df: pd.DataFrame) -> pd.DataFrame:
 
     # Apply any business-specific filters
     # Example: filter out negative quantities
-    if "quantity" in df_enhanced.columns:
-        df_filtered = transformer.filter_data(df_enhanced, {"quantity": {"min": 0}})
-    else:
-        df_filtered = df_enhanced
+    df_filtered = transformer.filter_data(df_enhanced, {"quantity": {"min": 0}}) if "quantity" in df_enhanced.columns else df_enhanced
 
     logger.info("Business rules applied successfully")
     return df_filtered

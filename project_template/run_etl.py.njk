@@ -100,7 +100,7 @@ Examples:
     return parser
 
 
-def start_pipeline():
+def start_etl():
     """Start the ETL pipeline with command-line interface."""
     parser = create_parser()
     args = parser.parse_args()
@@ -191,4 +191,4 @@ def start_pipeline():
 
 
 if __name__ == "__main__":
-    start_pipeline()
+    start_etl()
