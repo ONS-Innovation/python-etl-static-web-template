@@ -278,3 +278,7 @@ spec:
       - title: Open in catalog
         icon: catalog
         entityRef: ${{ steps.register.output.entityRef }}
+      - title: Open in TechDocs
+        url: ${{ steps.publish.output.techDocsUrl }}
+      - title: Open S3 Website
+        url: https://${{ s3_bucket_name }}.${{ aws_region }}.amazonaws.com/${{ parameters.repository_name }}/index.html
